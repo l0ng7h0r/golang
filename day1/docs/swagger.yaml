@@ -1,0 +1,156 @@
+basePath: /
+definitions:
+  main.Book:
+    properties:
+      author:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+  main.User:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample server for a book API.
+  title: Book API
+  version: "1.0"
+paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New Book
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/main.Book'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Book'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new book
+      tags:
+      - Books
+  /get-books:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Book'
+            type: array
+      security:
+      - ApiKeyAuth: []
+      summary: Get all books
+      tags:
+      - Books
+  /get-books/{id}:
+    get:
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Book'
+      security:
+      - ApiKeyAuth: []
+      summary: Get book by ID
+      tags:
+      - Books
+  /get-env:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get ENV variable (debug)
+      tags:
+      - System
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates user and returns a JWT token
+      parameters:
+      - description: User login
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/main.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - Auth
+  /update/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated Book
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/main.Book'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Book'
+      security:
+      - ApiKeyAuth: []
+      summary: Update book
+      tags:
+      - Books
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

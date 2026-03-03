@@ -1,0 +1,59 @@
+package main
+
+import (
+	"sync"
+	"fmt"
+	"github.com/gofiber/fiber/v3"
+)
+
+type Messsage struct {
+	Data string `json:"data"`
+}
+
+type PubSub struct {
+	subs []chan Messsage
+	mu sync.Mutex
+}
+
+
+func (ps * PubSub) Subscribe() chan Messsage {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	ch := make(chan Messsage, 1)
+	ps.subs = append(ps.subs, ch)
+	return ch
+}
+
+func (ps *PubSub) Publish(msg *Messsage) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	for _, sub := range ps.subs {
+		sub <- *msg
+	}
+}
+
+func main() {
+	app := fiber.New()
+
+	pubsub := PubSub{}
+
+	app.Post("/publisher", func(c fiber.Ctx) error {
+		message := new(Messsage)
+		if err := c.Bind().Body(message); err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+		pubsub.Publish(message)
+		return c.JSON(fiber.Map{
+			"message": "add to subscribers",
+		})
+	})
+
+	sub := pubsub.Subscribe()
+	go func() {
+		for msg := range sub {
+			fmt.Println("Received message: ", msg)
+		}
+	}()
+
+	app.Listen(":8080")
+}
