@@ -3,7 +3,6 @@ package usecase
 import (
 	"errors"
 	"os"
-	"strconv"
 
 	"github.com/l0ng7h0r/golang/internal/domain"
 	"github.com/l0ng7h0r/golang/internal/repository"
@@ -49,12 +48,12 @@ func (u *AuthUsecase) Login(email, password string) (string, string, error) {
 		return "", "", errors.New("invalid credentials")
 	}
 
-	accessToken, err := security.GenerateToken(strconv.FormatInt(user.ID, 10), user.Roles, os.Getenv("ACCESS_TOKEN_EXPIRY"))
+	accessToken, err := security.GenerateToken(user.ID, user.Roles, os.Getenv("JWT_ACCESS_EXPIRY"))
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := security.GenerateToken(strconv.FormatInt(user.ID, 10), user.Roles, os.Getenv("REFRESH_TOKEN_EXPIRY"))
+	refreshToken, err := security.GenerateToken(user.ID, user.Roles, os.Getenv("JWT_REFRESH_EXPIRY"))
 	if err != nil {
 		return "", "", err
 	}
@@ -75,12 +74,12 @@ func (u *AuthUsecase) Refresh(token string) (string, string, error) {
 		return "", "", errors.New("user not found")
 	}
 
-	accessToken, err := security.GenerateToken(strconv.FormatInt(user.ID, 10), user.Roles, os.Getenv("ACCESS_TOKEN_EXPIRY"))
+	accessToken, err := security.GenerateToken(user.ID, user.Roles, os.Getenv("JWT_ACCESS_EXPIRY"))
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err := security.GenerateToken(strconv.FormatInt(user.ID, 10), user.Roles, os.Getenv("REFRESH_TOKEN_EXPIRY"))
+	refreshToken, err := security.GenerateToken(user.ID, user.Roles, os.Getenv("JWT_REFRESH_EXPIRY"))
 	if err != nil {
 		return "", "", err
 	}

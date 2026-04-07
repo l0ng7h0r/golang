@@ -26,6 +26,7 @@ func main() {
 
 	app := fiber.New()
 
+	app.Post("/register", handler.Register)
 	app.Post("/login", handler.Login)
 	app.Post("/refresh", handler.Refresh)
 

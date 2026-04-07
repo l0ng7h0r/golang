@@ -22,7 +22,7 @@ func (r *UserRepository) CreateUser(user *domain.User) error {
 
 	defer tx.Rollback()
 
-	var userID int64
+	var userID string
 	err = tx.QueryRow(`INSERT INTO users(email, password) VALUES ($1, $2) RETURNING id`, user.Email, user.Password).Scan(&userID)
 	if err != nil {
 		return err
