@@ -10,6 +10,7 @@ import (
 	"github.com/l0ng7h0r/golang/internal/usecase"
 	"github.com/l0ng7h0r/golang/pkg/config"
 	"github.com/l0ng7h0r/golang/pkg/database"
+	"github.com/l0ng7h0r/golang/internal/middleware"
 )
 
 func main() {
@@ -20,15 +21,28 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}   
 
-	repo := repository.NewUserRepository(db)
-	usecase := usecase.NewAuthUsecase(repo)
-	handler := handler.NewAuthHandler(usecase)
+	userRepo := repository.NewUserRepository(db)
+	authUsecase := usecase.NewAuthUsecase(userRepo)
+	authHandler := handler.NewAuthHandler(authUsecase)
+	authMiddleware := middleware.NewAuthMiddleware(authUsecase)
 
 	app := fiber.New()
 
-	app.Post("/register", handler.Register)
-	app.Post("/login", handler.Login)
-	app.Post("/refresh", handler.Refresh)
+	api := app.Group("/api")
+
+	//Public routes
+	api.Post("/register", authHandler.Register)
+	api.Post("/login", authHandler.Login)
+	api.Post("/refresh", authHandler.Refresh)
+	
+	//Admin routes
+	admin := api.Group("/admin")
+	admin.Use(authMiddleware.Auth)
+	admin.Use(authMiddleware.RequireRole("admin"))
+	admin.Post("/create-user", authHandler.CreateUser)
+	admin.Get("/users", authHandler.GetAllUsers)
+	admin.Get("/users/:id", authHandler.GetUserByID)
+	admin.Delete("/users/:id", authHandler.DeleteUser)
 
 	app.Listen(":" + cfg.AppPort)
 }
