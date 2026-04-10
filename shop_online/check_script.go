@@ -17,45 +17,19 @@ func main() {
 	}
 	defer db.Close()
 
-	fmt.Println("--- Roles table ---")
-	rows, err := db.Query("SELECT id, name FROM roles")
+	// Try inserting a dummy refresh token for an existing user
+	var userID string
+	err = db.QueryRow("SELECT id FROM users LIMIT 1").Scan(&userID)
 	if err != nil {
-		fmt.Println("Error querying roles:", err)
-	} else {
-		for rows.Next() {
-			var id int
-			var name string
-			rows.Scan(&id, &name)
-			fmt.Printf("Role ID: %d, Name: %s\n", id, name)
-		}
-		rows.Close()
+		fmt.Println("No users found or error:", err)
+		return
 	}
 
-	fmt.Println("--- Users table ---")
-	rows, err = db.Query("SELECT id, email FROM users")
+	fmt.Println("Testing insert into refresh_tokens for user:", userID)
+	_, err = db.Exec(`INSERT INTO refresh_tokens(user_id, token, expires_at) VALUES ($1,$2,NOW() + INTERVAL '7 days')`, userID, "dummy_token_123")
 	if err != nil {
-		fmt.Println("Error querying users:", err)
+		fmt.Println("ERROR inserting refresh token:", err)
 	} else {
-		for rows.Next() {
-			var id string
-			var email string
-			rows.Scan(&id, &email)
-			fmt.Printf("User ID: %s, Email: %s\n", id, email)
-		}
-		rows.Close()
-	}
-
-	fmt.Println("--- User_Roles table ---")
-	rows, err = db.Query("SELECT user_id, role_id FROM user_roles")
-	if err != nil {
-		fmt.Println("Error querying user_roles:", err)
-	} else {
-		for rows.Next() {
-			var uid string
-			var rid int
-			rows.Scan(&uid, &rid)
-			fmt.Printf("UserID: %s, RoleID: %d\n", uid, rid)
-		}
-		rows.Close()
+		fmt.Println("SUCCESS inserting refresh token!")
 	}
 }

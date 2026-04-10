@@ -101,6 +101,11 @@ func (u *AuthUsecase) Login(email, password string) (string, string, error) {
 		return "", "", err
 	}
 
+	err = u.userRepo.SaveRefreshToken(user.ID, refreshToken)
+	if err != nil {
+		return "", "", err
+	}
+
 	return accessToken, refreshToken, nil
 }
 
@@ -125,6 +130,11 @@ func (u *AuthUsecase) Refresh(token string) (string, string, error) {
 	}
 
 	refreshToken, err := security.GenerateToken(user.ID, user.Roles, os.Getenv("JWT_REFRESH_EXPIRY"))
+	if err != nil {
+		return "", "", err
+	}
+
+	err = u.userRepo.SaveRefreshToken(user.ID, refreshToken)
 	if err != nil {
 		return "", "", err
 	}

@@ -40,6 +40,37 @@ func (r *UserRepository) CreateUser(user *domain.User) error {
 	return err
 }
 
+// CreateUserReturningID creates a user and returns the generated ID
+
+func (r *UserRepository) CreateUserReturningID(user *domain.User) (string, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return "", err
+	}
+
+	defer tx.Rollback()
+
+	var userID string
+	err = tx.QueryRow(`INSERT INTO users(email, password) VALUES ($1, $2) RETURNING id`, user.Email, user.Password).Scan(&userID)
+	if err != nil {
+		return "", err
+	}
+
+	for _, role := range user.Roles {
+		_, err := tx.Exec(`INSERT INTO user_roles (user_id, role_id) SELECT $1, id FROM roles WHERE name = $2`, userID, role)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return "", err
+	}
+
+	return userID, nil
+}
+
 // GetUserByID
 
 func (r *UserRepository) GetUserByID(id string) (*domain.User, error) {
@@ -67,7 +98,7 @@ func (r *UserRepository) GetUserByID(id string) (*domain.User, error) {
 // GetAllUsers
 
 func (r *UserRepository) GetAllUsers() ([]domain.User, error) {
-	rows, err := r.db.Query(`SELECT id, email, password FROM users`)
+	rows, err := r.db.Query(`SELECT id, email, password, created_at, updated_at FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +106,7 @@ func (r *UserRepository) GetAllUsers() ([]domain.User, error) {
 	var users []domain.User
 	for rows.Next() {
 		var u domain.User
-		err := rows.Scan(&u.ID, &u.Email, &u.Password)
+		err := rows.Scan(&u.ID, &u.Email, &u.Password, &u.CreatedAt, &u.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
