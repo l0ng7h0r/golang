@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"strconv"
-	
 	"github.com/gofiber/fiber/v3"
 	"github.com/l0ng7h0r/golang/internal/domain"
 	"github.com/l0ng7h0r/golang/internal/usecase"
@@ -19,17 +17,25 @@ func NewProductHandler(productUsecase *usecase.ProductUsecase, sellerUsecase *us
 
 func (h *ProductHandler) CreateProduct(c fiber.Ctx) error {
 	var req struct {
-		SellerID string `json:"seller_id"`
-		Name string `json:"name"`
-		Description string `json:"description"`
-		Price float64 `json:"price"`
-		Stock int `json:"stock"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Price       float64 `json:"price"`
+		Stock       int     `json:"stock"`
 	}
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err := h.productUsecase.CreateProduct(req.SellerID, req.Name, req.Description, req.Price, req.Stock)
+	userIDLocals := c.Locals("user_id")
+	if userIDLocals == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	sellerID, ok := userIDLocals.(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Invalid user_id in token"})
+	}
+
+	err := h.productUsecase.CreateProduct(sellerID, req.Name, req.Description, req.Price, req.Stock)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -65,7 +71,17 @@ func (h *ProductHandler) GetProductsBySeller(c fiber.Ctx) error {
 
 func (h *ProductHandler) DeleteProduct(c fiber.Ctx) error {
 	id := c.Params("id")
-	err := h.productUsecase.DeleteProduct(id)
+
+	userIDLocals := c.Locals("user_id")
+	if userIDLocals == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	sellerID, ok := userIDLocals.(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Invalid user_id in token"})
+	}
+
+	err := h.productUsecase.DeleteProduct(id, sellerID)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -73,28 +89,33 @@ func (h *ProductHandler) DeleteProduct(c fiber.Ctx) error {
 }
 
 func (h *ProductHandler) UpdateProduct(c fiber.Ctx) error {
-	id, err := strconv.Atoi(c.Params("id"))
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-	}
+	id := c.Params("id")
 
 	var req struct {
-		SellerID string `json:"seller_id"`
-		Name string `json:"name"`
-		Description string `json:"description"`
-		Price float64 `json:"price"`
-		Stock int `json:"stock"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Price       float64 `json:"price"`
+		Stock       int     `json:"stock"`
 	}
 	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	err = h.productUsecase.UpdateProduct(string(id), &domain.Product{
-		SellerID: req.SellerID,
-		Name: req.Name,
+	userIDLocals := c.Locals("user_id")
+	if userIDLocals == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+	sellerID, ok := userIDLocals.(string)
+	if !ok {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Invalid user_id in token"})
+	}
+
+	err := h.productUsecase.UpdateProduct(id, &domain.Product{
+		SellerID:    sellerID,
+		Name:        req.Name,
 		Description: req.Description,
-		Price: req.Price,
-		Stock: req.Stock,
+		Price:       req.Price,
+		Stock:       req.Stock,
 	})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})

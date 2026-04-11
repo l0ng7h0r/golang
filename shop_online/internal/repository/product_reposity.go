@@ -22,9 +22,9 @@ func (r *ProductRepository) CreateProduct(product *domain.Product) error {
 }
 
 func (r *ProductRepository) GetProductByID(id string) (*domain.Product, error) {
-	row := r.db.QueryRow(`SELECT seller_id, name, description, price, stock, created_at, updated_at FROM products WHERE id=$1`, id)
+	row := r.db.QueryRow(`SELECT id, seller_id, name, description, price, stock, created_at, updated_at FROM products WHERE id=$1`, id)
 	var p domain.Product
-	err := row.Scan(&p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
+	err := row.Scan(&p.ID, &p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (r *ProductRepository) GetProductByID(id string) (*domain.Product, error) {
 }
 
 func (r *ProductRepository) GetAllProducts() ([]domain.Product, error) {
-	rows, err := r.db.Query(`SELECT seller_id, name, description, price, stock, created_at, updated_at FROM products`)
+	rows, err := r.db.Query(`SELECT id, seller_id, name, description, price, stock, created_at, updated_at FROM products`)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (r *ProductRepository) GetAllProducts() ([]domain.Product, error) {
 	var products []domain.Product
 	for rows.Next() {
 		var p domain.Product
-		err := rows.Scan(&p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.ID, &p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -50,7 +50,7 @@ func (r *ProductRepository) GetAllProducts() ([]domain.Product, error) {
 }
 
 func (r *ProductRepository) GetProductsBySeller(sellerID string) ([]domain.Product, error) {
-	rows, err := r.db.Query(`SELECT seller_id, name, description, price, stock, created_at, updated_at FROM products WHERE seller_id=$1`, sellerID)
+	rows, err := r.db.Query(`SELECT id, seller_id, name, description, price, stock, created_at, updated_at FROM products WHERE seller_id=$1`, sellerID)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (r *ProductRepository) GetProductsBySeller(sellerID string) ([]domain.Produ
 	var products []domain.Product
 	for rows.Next() {
 		var p domain.Product
-		err := rows.Scan(&p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.ID, &p.SellerID, &p.Name, &p.Description, &p.Price, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -67,18 +67,26 @@ func (r *ProductRepository) GetProductsBySeller(sellerID string) ([]domain.Produ
 	return products, nil
 }
 
-func (r *ProductRepository) DeleteProduct(id string) error {
-	_, err := r.db.Exec(`DELETE FROM products WHERE id=$1`, id)
+func (r *ProductRepository) DeleteProduct(id string, sellerID string) error {
+	res, err := r.db.Exec(`DELETE FROM products WHERE id=$1 AND seller_id=$2`, id, sellerID)
 	if err != nil {
 		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return sql.ErrNoRows // Or custom error
 	}
 	return nil
 }
 
 func (r *ProductRepository) UpdateProduct(id string, product *domain.Product) error {
-	_, err := r.db.Exec(`UPDATE products SET seller_id=$1, name=$2, description=$3, price=$4, stock=$5 WHERE id=$6`, product.SellerID, product.Name, product.Description, product.Price, product.Stock, id)
+	res, err := r.db.Exec(`UPDATE products SET name=$1, description=$2, price=$3, stock=$4 WHERE id=$5 AND seller_id=$6`, product.Name, product.Description, product.Price, product.Stock, id, product.SellerID)
 	if err != nil {
 		return err
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return sql.ErrNoRows // Or custom error
 	}
 	return nil
 }
