@@ -18,7 +18,7 @@ func NewProductUsecase(repo *repository.ProductRepository) *ProductUsecase {
 }
 
 func (u *ProductUsecase) CreateProduct(product *domain.Product) error {
-	 if product.Price <= 0 {
+	if product.Price <= 0 {
         return errors.New("price must be greater than 0")
     }
     if product.Stock < 0 {

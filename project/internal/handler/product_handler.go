@@ -100,7 +100,7 @@ func (h *ProductHandler) UpdateProduct(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "success"})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "success"})	
 }
 
 func (h *ProductHandler) DeleteProduct(c fiber.Ctx) error {
